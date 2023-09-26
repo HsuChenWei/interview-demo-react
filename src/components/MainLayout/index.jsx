@@ -7,13 +7,19 @@ import {
   HomeOutlined,
   EditOutlined,
   FileSearchOutlined,
+  // PoweroffOutlined,
 } from '@ant-design/icons';
 import {
   Layout, Menu, Button, theme,
 } from 'antd';
-import { Outlet, useNavigate } from 'react-router';
+import { useNavigate, BrowserRouter as Router } from 'react-router-dom';
+import OrderPage from '../../pages/Order/index';
+import BookingPage from '../../pages/Booking/index';
+import AdminPage from '../../pages/Admin/index';
 
 const { Header, Sider, Content } = Layout;
+
+const { userType } = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
 const navItems = [
   {
@@ -22,42 +28,57 @@ const navItems = [
     label: '首頁',
   },
   {
-    key: 'booking',
+    key: '/booking',
     icon: <EditOutlined />,
     label: '會議室預約',
+    component: BookingPage,
   },
   {
-    key: 'order',
+    key: '/order',
     icon: <FileSearchOutlined />,
     label: '預約管理',
-  },
-  {
-    key: 'admin',
-    icon: <UserOutlined />,
-    label: '管理員維護',
+    component: OrderPage,
   },
 ];
+const adminNavItem = {
+  key: '/admin',
+  icon: <UserOutlined />,
+  label: '管理員維護',
+  component: AdminPage,
+};
 
 export default function MainLayout() {
   const navigate = useNavigate();
+
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+  const [selectedNavItem, setSelectedNavItem] = useState('/');
+  const [baseNavItems, setBaseNavItems] = useState([]);
 
   const clickHandler = () => {
     navigate('/login');
   };
 
   const handleMenuClick = (e) => {
+    if ((!userInfo || !userInfo.userType) && e.key !== '/') {
+      navigate('/login');
+      return;
+    }
+
+    setSelectedNavItem(e.key);
     navigate(e.key);
   };
+
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer },
   } = theme.useToken();
 
-  // State to hold the current viewport width
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
-  // Update viewport width when the window is resized
   useEffect(() => {
+    const path = window.location.pathname;
+    setSelectedNavItem(path);
     const handleResize = () => {
       setViewportWidth(window.innerWidth);
     };
@@ -66,6 +87,23 @@ export default function MainLayout() {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    const { userType: localUserType } = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    if (parseInt(localUserType, 10) === 1) {
+      setBaseNavItems([...navItems, adminNavItem]);
+    } else {
+      setBaseNavItems([...navItems]);
+    }
+  }, []);
+  useEffect(() => {
+  }, []);
+  const logoutHandler = () => {
+    localStorage.removeItem('userInfo');
+    // window.location.reload();
+
+    navigate('/login');
+  };
 
   return (
     <Layout>
@@ -79,7 +117,7 @@ export default function MainLayout() {
           mode="inline"
           defaultSelectedKeys={['1']}
           onClick={handleMenuClick}
-          items={navItems}
+          items={baseNavItems}
         />
       </Sider>
       <Layout>
@@ -112,44 +150,50 @@ export default function MainLayout() {
           <div
             style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}
           >
-            {/* 登入按鈕 */}
             <Button
               type="primary"
               icon={<LoginOutlined />}
               style={{ marginRight: '20px' }}
-              onClick={clickHandler} // 使用登入按鈕的點擊事件
+              onClick={userInfo && userInfo.userType ? logoutHandler : clickHandler}
             >
-              登入
+              {userInfo && userInfo.userType ? '登出' : '登入'}
             </Button>
-            {/* 其他頭部項目 */}
+            {/* <Button
+              type="primary"
+              icon={<PoweroffOutlined />}
+              loading={loadings[2]}
+              onClick={() => enterLoading(2)}
+            /> */}
           </div>
         </Header>
         <Content
           style={{
             margin: '24px 16px',
             padding: '24px',
-            minHeight: '100vh', // Set minHeight to fill viewport
+            minHeight: '100vh',
             background: colorBgContainer,
-            fontSize: `${viewportWidth * 0.01}px`, // Adjust font size based on viewport width
-            display: 'flex', // Use flex layout
-            flexDirection: 'column', // Stack elements vertically
+            fontSize: `${viewportWidth * 0.01}px`,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          <div
-            style={{
-              flex: 1,
-              marginBottom: '24px',
-              border: '1px solid #ccc',
-              padding: '16px',
-            }}
-          >
-            {/* 上半部分的內容 */}
-            上半部分的內容...
-          </div>
-          <div style={{ flex: 1, border: '1px solid #ccc', padding: '16px' }}>
-            {/* 下半部分的內容 */}
-            下半部分的內容...
-          </div>
+          {selectedNavItem === '/booking' && (
+            <div>
+              <BookingPage />
+            </div>
+          )}
+
+          {selectedNavItem === '/order' && (
+            <div>
+              <OrderPage />
+            </div>
+          )}
+
+          {selectedNavItem === '/admin' && (
+            <div>
+              <AdminPage />
+            </div>
+          )}
         </Content>
       </Layout>
     </Layout>

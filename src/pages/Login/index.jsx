@@ -1,23 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Checkbox,
-  Col,
-  Drawer,
-  Form,
-  Input,
-  Row,
-  Space,
-} from 'antd';
-import { useNavigate } from 'react-router';
-import { login } from '../../api/login';
+import axios from 'axios';
+import jwtDecode from 'jwt-decode';
 
-// const { Option } = Select;
+import {
+  Button, Checkbox, Col, Drawer, Form, Input, Row, Space, message,
+} from 'antd';
+import { Navigate, useNavigate } from 'react-router';
+import { login } from '../../api/login';
+import { register } from '../../api/register';
 
 function LoginPage() {
   const [open, setOpen] = useState(false);
+  const [registeredUserName, setRegisteredUserName] = useState('');
   const navgiate = useNavigate();
+
+  const [form] = Form.useForm();
 
   const showDrawer = () => {
     setOpen(true);
@@ -28,17 +26,71 @@ function LoginPage() {
   };
 
   const onFinish = async (values) => {
-    const result = await login(values);
-    const info = result?.data?.data;
-    localStorage.setItem('accessToken', info?.accessToken);
+    try {
+      const result = await login(values);
+      if (result?.data?.data?.accessToken) {
+        const info = result.data.data;
+        localStorage.setItem('accessToken', info.accessToken);
+        const userInfo = jwtDecode(info.accessToken);
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        navgiate('/');
+        message.success('成功登入');
+      } else {
+        message.error('登入失敗: 缺少訪問令牌');
+      }
+    } catch (error) {
+      message.error('登入失敗: 未知錯誤');
+    }
+  };
+  const [userData, setUserData] = useState({
+    userName: '',
+    userPwd: '',
+  });
 
-    navgiate('/admin');
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUserData({
+      ...userData,
+      [name]: value,
+    });
+  };
+
+  const checkUserExists = async (userName) => {
+    try {
+      const response = await axios.get(
+        `/api/user/checkExist?userName=${userName}`,
+      );
+      return response.data.exists;
+    } catch (error) {
+      return false;
+    }
   };
 
   const onFinishRegister = async (values) => {
-    // console.log('Received values of register form:', values);
-    // 在这里添加注册逻辑
-    onClose(); // 注册成功后关闭 Drawer
+    console.log('Registration values:', values);
+    try {
+      const { userName, userPwd } = values;
+      const userExists = await checkUserExists(userName);
+      if (userExists) {
+        console.error('User already exists:', userName);
+        message.error('帳號已存在');
+        return;
+      }
+
+      const response = await register({ userName, userPwd });
+      if (response && response.status === 200) {
+        console.log('Registration successful!');
+        setRegisteredUserName(userName);
+        message.success('註冊成功');
+        navgiate('/login');
+        onClose();
+      } else {
+        console.error('Registration failed:', response);
+      }
+    } catch (error) {
+      console.error('Error during registration:', error);
+      message.error('註冊失敗');
+    }
   };
 
   return (
@@ -61,6 +113,15 @@ function LoginPage() {
           boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.1)',
         }}
       >
+        <div
+          style={{
+            textAlign: 'center',
+            margin: '20px',
+            fontSize: '20px',
+          }}
+        >
+          會員登入
+        </div>
         <Form
           name="basic"
           labelCol={{
@@ -80,28 +141,27 @@ function LoginPage() {
           autoComplete="off"
         >
           <Form.Item
-            label="Username"
-            name="accountId"
+            label="Account"
+            name="userName"
             rules={[
               {
                 required: true,
-                message: 'Please input your username!',
+                message: 'Please input your account!',
               },
             ]}
             labelCol={{
-              span: 0, // 隱藏標籤
+              span: 0,
             }}
             wrapperCol={{
-              offset: 4, // 將輸入框向左移動
+              offset: 4,
               span: 16,
             }}
           >
-            <Input style={{ width: '200px', marginLeft: '-8px' }} />
+            <Input style={{ width: '200px' }} />
           </Form.Item>
-
           <Form.Item
             label="Password"
-            name="password"
+            name="userPwd"
             rules={[
               {
                 required: true,
@@ -109,16 +169,15 @@ function LoginPage() {
               },
             ]}
             labelCol={{
-              span: 0, // 隱藏標籤
+              span: 0,
             }}
             wrapperCol={{
-              offset: 4, // 將輸入框向左移動
+              offset: 4,
               span: 16,
             }}
           >
             <Input.Password style={{ width: '200px', marginLeft: '-8px' }} />
           </Form.Item>
-
           <Form.Item
             name="remember"
             valuePropName="checked"
@@ -126,10 +185,7 @@ function LoginPage() {
               offset: 8,
               span: 16,
             }}
-          >
-            <Checkbox>Remember me</Checkbox>
-          </Form.Item>
-
+          />
           <Form.Item
             wrapperCol={{
               offset: 8,
@@ -138,22 +194,22 @@ function LoginPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <Button type="primary" htmlType="submit">
-                Submit
+                Log in
               </Button>
               <Button
                 type="primary"
                 onClick={showDrawer}
                 icon={<PlusOutlined />}
-                style={{ marginRight: '80px' }}
+                style={{ right: '140px' }}
               >
-                New account
+                Sign up
               </Button>
             </div>
           </Form.Item>
         </Form>
       </div>
       <Drawer
-        title="Create a new account"
+        title="Sign up"
         width={720}
         onClose={onClose}
         visible={open}
@@ -163,19 +219,37 @@ function LoginPage() {
         extra={(
           <Space>
             <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={onFinishRegister} type="primary">
+            <Button
+              onClick={() => {
+                form.validateFields().then(async (values) => {
+                  const { userName, userPwd } = values;
+                  if (userName && userPwd) {
+                    onFinishRegister({ userName, userPwd });
+                  } else {
+                    console.error('Username and password are required.');
+                  }
+                });
+              }}
+              type="primary"
+            >
               Submit
             </Button>
           </Space>
         )}
       >
         {/* 注册表单部分 */}
-        <Form layout="vertical" hideRequiredMark onFinish={onFinishRegister}>
+        <Form
+          layout="vertical"
+          hideRequiredMark
+          onFinish={onFinishRegister}
+          form={form}
+          initialValues={userData}
+        >
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="username"
-                label="Username"
+                name="userName"
+                label="Account"
                 rules={[
                   {
                     required: true,
@@ -183,14 +257,18 @@ function LoginPage() {
                   },
                 ]}
               >
-                <Input placeholder="Please enter user name" />
+                <Input
+                  placeholder="Please enter user name"
+                  value={userData.userName}
+                  onChange={(e) => handleChange(e, 'userName')}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="password"
+                name="userPwd"
                 label="Password"
                 rules={[
                   {
@@ -199,23 +277,11 @@ function LoginPage() {
                   },
                 ]}
               >
-                <Input placeholder="Please enter user password" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  {
-                    required: true,
-                    message: 'Please enter user email',
-                  },
-                ]}
-              >
-                <Input placeholder="Please enter user email" />
+                <Input.Password
+                  placeholder="Please enter user password"
+                  value={userData.userPwd}
+                  onChange={(e) => handleChange(e, 'userPwd')}
+                />
               </Form.Item>
             </Col>
           </Row>

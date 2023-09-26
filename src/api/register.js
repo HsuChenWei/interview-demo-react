@@ -1,9 +1,9 @@
 import request from './request';
 
-export function login({ userName, userPwd }) {
+export function register({ userName, userPwd }) {
   return request({
     method: 'post',
-    endpoint: '/api/member/user/login',
+    endpoint: '/api/member/user/register',
     data: {
       userName,
       userPwd,

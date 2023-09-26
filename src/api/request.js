@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_HOST = process.env?.REACT_APP_API_HOST ?? 'https://api.dev.nccuaps.profcoo.com';
-
+const API_HOST = process.env?.REACT_APP_API_HOST ?? 'http://localhost:8080';
+// https://api.dev.nccuaps.profcoo.com
 export default function request({
   method = 'get',
   baseURL = API_HOST,
@@ -16,7 +16,7 @@ export default function request({
   const requestHeaders = new Headers();
 
   if (jwt) {
-    const accessToken = localStorage.getItem('APSAccessToken');
+    const accessToken = localStorage.getItem('accessToken');
     if (accessToken) requestHeaders.set('Authorization', `Bearer ${accessToken}`);
   }
 
