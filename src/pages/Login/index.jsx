@@ -193,16 +193,23 @@ function LoginPage() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" style={{ right: '50px' }}>
                 Log in
               </Button>
               <Button
                 type="primary"
                 onClick={showDrawer}
                 icon={<PlusOutlined />}
-                style={{ right: '140px' }}
+                style={{ right: '50px' }}
               >
                 Sign up
+              </Button>
+              <Button
+                type="primary"
+                style={{ right: '50px' }}
+                // onClick={showForgetPwdDrawer}
+              >
+                忘記密碼
               </Button>
             </div>
           </Form.Item>
@@ -287,6 +294,17 @@ function LoginPage() {
           </Row>
         </Form>
       </Drawer>
+      {/* <Drawer
+        title="忘記密碼"
+        width={720}
+        onClose={onCloseForgetPwdDrawer}
+        visible={forgetPwdOpen}
+        bodyStyle={{ paddingBottom: 80 }}
+      >
+        {}
+        <p>請輸入您的電子郵件地址，我們將發送一個重置密碼的連結給您。</p>
+        {}
+      </Drawer> */}
     </div>
   );
 }

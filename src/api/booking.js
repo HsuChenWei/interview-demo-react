@@ -15,11 +15,11 @@ export function getRoomId(data) {
     data,
   });
 }
-export function getAvailableTime(payload, roomId) {
+export function getAvailableTime(roomId) {
   return request({
     method: 'get',
-    endpoint: `/api/member/booking/${payload.roomId}/available-hourly-time-slots`,
-    params: { roomId },
+    endpoint: `/api/member/booking/${roomId}/available-hourly-time-slots`,
+    // params: { roomId },
   });
 }
 

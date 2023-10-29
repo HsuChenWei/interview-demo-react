@@ -60,13 +60,15 @@ export default function BookingPage() {
     const fetchAvailableTimeSlots = async () => {
       if (!roomId) return;
       try {
-        const payload = {
-          roomId,
-        };
-        const response = await getAvailableTime(payload);
+        // const payload = {
+        //   roomId,
+        // };
+        const response = await getAvailableTime(roomId);
 
-        if (response && response.data) {
-          setAvailableTimeSlots(response.data);
+        if (Array.isArray(response.data.data)) {
+          setAvailableTimeSlots(response.data.data);
+        } else {
+          console.error('Received data is not an array:', response.data);
         }
       } catch (e) {
         console.log('Error fetching available time slots:', e);

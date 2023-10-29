@@ -23,11 +23,6 @@ const { userType } = JSON.parse(localStorage.getItem('userInfo') || '{}');
 
 const navItems = [
   {
-    key: '/',
-    icon: <HomeOutlined />,
-    label: '首頁',
-  },
-  {
     key: '/booking',
     icon: <EditOutlined />,
     label: '會議室預約',
@@ -86,6 +81,11 @@ export default function MainLayout() {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
+  }, []);
+  useEffect(() => {
+    if (!userInfo || !userInfo.userType) {
+      navigate('/login');
+    }
   }, []);
 
   useEffect(() => {
@@ -158,12 +158,6 @@ export default function MainLayout() {
             >
               {userInfo && userInfo.userType ? '登出' : '登入'}
             </Button>
-            {/* <Button
-              type="primary"
-              icon={<PoweroffOutlined />}
-              loading={loadings[2]}
-              onClick={() => enterLoading(2)}
-            /> */}
           </div>
         </Header>
         <Content
